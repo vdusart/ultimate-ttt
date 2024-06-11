@@ -1,0 +1,22 @@
+version: '3.9'
+
+services:
+  frontend:
+    image: nginx
+    ports:
+      - 3001:80
+    volumes:
+      - ./frontend/:/usr/share/nginx/html
+
+  backend:
+    container_name: backend
+    restart: always
+    build:
+      context: ./backend
+      dockerfile: ./.docker/dev.dockerfile
+    ports:
+      - "8080:8080"
+    volumes:
+      - type: bind
+        source: ./backend/src/
+        target: /app/src/
