@@ -1,9 +1,11 @@
 mod api;
+mod model;
 
 use std::{env, io};
 
 use actix_cors::Cors;
 use actix_web::{get, middleware::Logger, App, HttpResponse, HttpServer, Responder};
+
 use api::game;
 
 #[get("/")]
