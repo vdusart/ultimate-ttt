@@ -1,6 +1,9 @@
 use actix_web::{get, web::Json};
 
+use crate::model::grid::Grid;
+
 #[get("/game/{game_id}")]
 pub async fn get_game() -> Json<String> {
-    Json(String::from("001100100001100010010100001000000000000000000000000100000010000000000001000010000000000000001000000000000000000000001000000000000000000001010000000001001000010000"))
+    let grid = Grid::new(2);
+    Json(grid.export())
 }
