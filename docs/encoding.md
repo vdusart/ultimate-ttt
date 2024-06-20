@@ -2,12 +2,12 @@
 
 In this file, you will find the details about our encoding system for the grid.
 
-Our game employs an encoding system to transfer the game state from the backend to the frontend. The frontend has no logic; it simply displays the data received from the backend.
+This encoding is used to transfer the game state from the backend to the frontend. The frontend has no logic, it simply displays the data received from the backend and returns which move has been played.
 
 ## Requirements
 The encoding system must:
-- Support an infinite depth grid
-- Be as compact as possible (just for the fun of it)
+- Allow for a grid of infinite depth.
+- Use as few bits as possible (because why not?).
 
 ## Explanation
 
@@ -40,7 +40,7 @@ Consider this grid:
 O|X| 
 ```
 
-This grid is represented as follow:
+This grid is encoded as follow:
 ```
 0b000 0b010 0b001
 0b000 0b001 0b011   => 0b000010001000001011001010000
@@ -50,14 +50,13 @@ This grid is represented as follow:
 ### Handling sub-grids
 In the example above, we saw all the 4 simple states of a cell.
 
-Now let's take a closer look at the sub-grid.
-We saw earlier how we mark a cell as a sub-grid, but we have to describe the content of this sub-grid.
+Now let's take a closer look at the sub-grid. We saw earlier how we mark a cell as a sub-grid, but we have to describe the content of this sub-grid.
 
-We concatenate the sub-grid's cell in a breadth-first manner. This approach allows for truncating the byte string if it becomes too long, a common occurrence in deep games.
+We concatenate the sub-grid's cells in a breadth-first manner. This approach allows for truncating the byte string if it becomes too long, a common occurrence in deep games.
 
 #### Complete example
 
-Let's see how we can define this grid (see image bellow).
+Let's see how we can encode this grid (see image below).
 ![complex grid](https://github.com/vdusart/ultimate-ttt/assets/43795504/3fb689b9-4cac-4b94-ae87-a1c55dc7d51f)
 
 
@@ -114,7 +113,7 @@ O|X|      0b001 0b010 0b000
  |X|      0b000 0b010 0b000
 ```
 
-After concatenating all the values we obtain the complete data.
+After concatenating all the values we end up with the encoded grid.
 
 ```
 Data:
@@ -131,14 +130,14 @@ Length: 6 * 27 = 162 bits
 
 # Decoding
 
-This part is explain the flow of decoding a full grid.
+This section covers the decoding algorithm.
 
 ### Axioms:
 - The data is a byte string
 - Length % 27 == 0
 
 ### Decoding Process
-1. Iterate through the byte string in 27-bits chunks (grid by grid).
+1. Iterate through the byte string in 27-bit chunks (grid by grid).
 2. Within each 27-bit chunk, read 3 bits at a time (cell by cell)
-3. Each time a `0b100` value (sub-grid) is encountered, push a new grid onto a queue for later instantiation.
-4. At the beginning of each new grid, pop the first element from the queue and instantiate that sub-grid.
+3. Each time a `0b100` value (sub-grid) is encountered, push a new grid onto a queue to be decoded later.
+4. At the beginning of each new grid, pop the first element from the queue and decode that sub-grid.

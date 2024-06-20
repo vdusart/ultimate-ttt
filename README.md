@@ -22,23 +22,36 @@ The objective is to align 3 of your pieces in a row, column or diagonal on the m
 *In exactly the same way a traditional game of Tic Tac Toe is won.*
 
 ## Rules
-/!\\: The player can always play in the deepest level of a cell. If a cell is a subgrid, a player cannot override the whole subgrid with his piece.
+/!\\: The player can only play in the deepest level of a cell. If a cell is a subgrid, a player cannot override the whole subgrid with their piece.
 
-**Initial move:** The first player can place his piece in any of the deepest level of the board.
+**Initial move:** The first player can place their piece in any of the deepest levels of the oard.
 
-**Subsequent moves:** The location of the next move is determined by the position of the cell that was just played, guiding the opponent to play in a specific board.
+**Subsequent moves:** The location of the next move is determined by the move that was just played, guiding the opponent to play in a specific board.
 
-**Direction control:**
-- This part has to be done, because we don't know yet what we want.
-- If a move directs the opponent to a cell that corresponds to a board that has already been won (or is full), the opponent can play in the any of the remaining available cell.
+*The move sequence consists of indices representing the path though the grid hierarchy.*
+
+**Forced Move Mechanics:**
+- Each move dictates the subgrid in which the next player must play. If a player makes the move `a.b.c`, the next player will be required to play in the subgrid specified by `b.c`, choosing any cell within that subgrid.
+- If a move directs the opponent to a cell that corresponds to a board that has already been won (or is full), the opponent can play in any of the remaining available cells.
+
+
+Illustration Example:
+
+Let's imagine we are playing on a grid with levels of depth. Player 1 makes a move in the cell `1.8.3`, which means he is playing in subgrid 2,
+then in subgrid 8 within subgrid 1, and finally in cell 3 within subgrid 8.
+![Player 1 move](./docs/imgs/forced-move-1.png)
+
+As a result, Player 2 has to make his next move with subgrid 3 of subgrid 8 (see image below);
+![Player 2 possible moves](./docs/imgs/forced-move-2.png)
+
 
 **Winning a board at any depth:**
 - A grid is won by the standard Tic Tac Toe rules: completing a row, column or diagonal within that grid.
-- If a grid ends in a draw, the grid is marked as both circle and cross. Any of the player can use this cell to win the higher level grid.
+- If a grid ends in a draw, the grid is marked as both circle and cross. Any of the players can use this cell to win the higher level grid.
 
 ## Technical documentation
 We have put together some documentation to explain some of the concepts behind our project. You can find it [here](./docs/README.md).
 
 # Authors
-- DRAESCHER Lucas
+- DRAESCHER Lucas (Reviewer)
 - DUSART Victor
