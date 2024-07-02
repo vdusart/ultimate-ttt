@@ -1,4 +1,4 @@
-use crate::{db, schema::games, utils::generate_id};
+use crate::{db, utils::generate_id};
 use diesel::prelude::*;
 
 use super::grid::Grid;
@@ -58,5 +58,21 @@ impl Game {
         }
     }
 
-    // save -> Updates the game in the db
+    // Saves the current game in the db
+    pub fn save(self: &Self) -> Result<(), String> {
+        use crate::schema::games::dsl::*;
+        let mut connection = db::init();
+
+        let update_result = diesel::update(games)
+            .filter(id.eq(self.id.to_string()))
+            .set(
+                grid.eq(self.grid.export())
+            )
+            .get_result::<GameDTO>(&mut connection);
+
+        match update_result {
+           Ok(_) => Ok(()),
+           Err(_) => Err(String::from("Impossible to save the game in the database"))
+        }
+    }
 }
