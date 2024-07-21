@@ -1,4 +1,4 @@
-CREATE TABLE games (
+CREATE TABLE IF NOT EXISTS games (
     id VARCHAR PRIMARY KEY,
     grid VARCHAR NOT NULL
-)
+);

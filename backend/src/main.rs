@@ -1,7 +1,6 @@
 mod api;
 mod db;
 mod model;
-mod schema;
 mod utils;
 
 use std::{env, io};
@@ -24,7 +23,14 @@ async fn main() -> io::Result<()> {
     env::set_var("RUST_BACKTRACE", "1");
     env_logger::init();
 
-    HttpServer::new(|| {
+    let pool = db::get_pool().await;
+
+    let res = sqlx::migrate!("./migrations")
+        .run(&pool)
+        .await;
+    println!("res migrations: {:?}", res);
+
+    HttpServer::new(move || {
         let cors = Cors::default()
             .allowed_origin("http://localhost:3001");
 

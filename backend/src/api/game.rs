@@ -4,10 +4,11 @@ use crate::model::{game::Game, grid::{Cell, Grid}};
 
 #[post("/game")]
 pub async fn create_game() -> Json<String> {
-    let game = match Game::new(1) {
+    let game = match Game::new(1).await {
         Ok(game) => game,
         Err(error_msg) => todo!("Return an http error with the error_msg in it.")
     };
+    Game::count().await;
     Json(game.id)
 }
 
@@ -15,7 +16,7 @@ pub async fn create_game() -> Json<String> {
 pub async fn get_game(path: Path<String>) -> Json<String> {
     let game_id = path.into_inner();
     println!("The requested id is: {}", game_id);
-    let game = match Game::load(game_id) {
+    let game = match Game::load(game_id).await {
         Ok(game) => game,
         Err(error_msg) => todo!("Return an http error with the error_msg in it.")
     };

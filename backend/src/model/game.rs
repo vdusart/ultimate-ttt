@@ -1,5 +1,6 @@
 use crate::{db, utils::generate_id};
-use diesel::prelude::*;
+use serde::{Deserialize, Serialize};
+use sqlx::prelude::FromRow;
 
 use super::grid::Grid;
 
@@ -9,7 +10,7 @@ pub struct Game {
     pub grid: Grid,
 }
 
-#[derive(Debug, Queryable)]
+#[derive(Debug, FromRow, Deserialize, Serialize)]
 struct GameDTO {
     id: String,
     grid: String,
@@ -17,8 +18,7 @@ struct GameDTO {
 
 impl Game {
     // Creates a game, saves it in the db and returns it
-    pub fn new(depth: u8) -> Result<Self, String> {
-        use crate::schema::games::dsl::*;
+    pub async fn new(depth: u8) -> Result<Self, String> {
         let error_msg: String = String::from("Impossible to create a game.");
 
         let new_game = Game {
@@ -26,53 +26,74 @@ impl Game {
             grid: Grid::new(depth)
         };
 
-        let mut connection = db::init();
-        let insert_result = diesel::insert_into(games)
-            .values((id.eq(&new_game.id), grid.eq(new_game.grid.export())))
-            .execute(&mut connection);
+        let pool = db::get_pool().await;
 
-        match insert_result {
-            Ok(inserted_rows) => {
-                if inserted_rows != 1 {
-                    Err(error_msg)
-                } else {
-                    Ok(new_game)
-                }
-            }
-            Err(_) => Err(String::from(error_msg))
+        let result = sqlx::query_as::<_, GameDTO>(
+            r#"
+            INSERT INTO games (id, grid)
+            VALUES ($1, $2)
+            RETURNING *;
+            "#,
+            )
+            .bind(new_game.id.clone())
+            .bind(new_game.grid.export())
+            .fetch_one(&pool)
+            .await;
+
+        match result {
+            Ok(_) => Ok(new_game),
+            Err(_) => Err(error_msg)
         }
     }
 
     // Loads a game from a game_id
-    pub fn load(game_id: String) -> Result<Self, String> {
-        use crate::schema::games::dsl::*;
-        let mut connection = db::init();
+    pub async fn load(game_id: String) -> Result<Self, String> {
+        let pool = db::get_pool().await;
 
-        match games.filter(id.eq(game_id)).first::<GameDTO>(&mut connection) {
-            Ok(game_dto) => Ok(Game {
-                id: game_dto.id,
-                // TODO: load the proper grid from the grid string
-                grid: Grid::new(1)
-            }),
+        let result = sqlx::query_as::<_, GameDTO>(
+            r#"
+            SELECT * FROM games
+            WHERE id=$1;
+            "#,
+            )
+            .bind(game_id)
+            .fetch_one(&pool)
+            .await;
+
+        match result {
+            Ok(game_dto) => {
+                // todo: Here we have to load a grid from its bytes string representation
+                let grid = Grid::new(1);
+                Ok(Game {
+                    id: game_dto.id,
+                    grid: grid
+                })
+            },
             Err(_) => Err(String::from("Impossible to load game."))
         }
     }
 
     // Saves the current game in the db
-    pub fn save(self: &Self) -> Result<(), String> {
-        use crate::schema::games::dsl::*;
-        let mut connection = db::init();
+    pub async fn save(self: &Self) -> Result<(), String> {
+        let error_msg: String = String::from("Impossible to create a game.");
 
-        let update_result = diesel::update(games)
-            .filter(id.eq(self.id.to_string()))
-            .set(
-                grid.eq(self.grid.export())
+        let pool = db::get_pool().await;
+        
+        let result = sqlx::query(
+            r#"
+            UPDATE games SET
+            grid = $2 WHERE id = $1
+            RETURNING *;
+            "#,
             )
-            .get_result::<GameDTO>(&mut connection);
+            .bind(self.id.clone())
+            .bind(self.grid.export())
+            .fetch_one(&pool)
+            .await;
 
-        match update_result {
-           Ok(_) => Ok(()),
-           Err(_) => Err(String::from("Impossible to save the game in the database"))
+        match result {
+            Ok(_) => Ok(()),
+            Err(_) => Err(error_msg)
         }
     }
 }
