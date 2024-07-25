@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 actix-web = "^4"
 actix-cors = "^0.6"
-serde = {versio = "^1", features = ["derive"]}
+serde = {version = "^1", features = ["derive"]}
 env_logger = "^0.11"
 log = "^0.4"
 dotenv = "0.15.0"
