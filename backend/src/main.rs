@@ -3,32 +3,30 @@ mod db;
 mod model;
 mod utils;
 
-use std::{env, io};
+use std::io;
 
 use actix_cors::Cors;
-use actix_web::{get, middleware::Logger, App, HttpResponse, HttpServer, Responder};
+use actix_web::{middleware::Logger, web, App, HttpServer};
 
 use api::game;
 use dotenv::dotenv;
+use sqlx::{Pool, Postgres};
 
-#[get("/")]
-async fn hello() -> impl Responder {
-    HttpResponse::Ok().body("Hello World!")
+struct ApplicationState {
+    pool: Pool<Postgres>
 }
 
 #[actix_web::main]
 async fn main() -> io::Result<()> {
     dotenv().ok();
-    env::set_var("RUST_LOG", "debug");
-    env::set_var("RUST_BACKTRACE", "1");
     env_logger::init();
 
-    let pool = db::get_pool().await;
+    let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    let pool = db::get_pool(&database_url).await;
 
-    let res = sqlx::migrate!("./migrations")
+    let _ = sqlx::migrate!("./migrations")
         .run(&pool)
         .await;
-    println!("res migrations: {:?}", res);
 
     HttpServer::new(move || {
         let cors = Cors::default()
@@ -37,7 +35,7 @@ async fn main() -> io::Result<()> {
         App::new()
             .wrap(cors)
             .wrap(Logger::new("[%t] - %r (%s) - %Dms"))
-            .service(hello)
+            .app_data(web::Data::new(ApplicationState { pool: pool.clone() }))
             .service(game::get_game)
             .service(game::create_game)
     })

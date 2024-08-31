@@ -1,6 +1,6 @@
-use crate::{db, utils::generate_id};
+use crate::utils::generate_id;
 use serde::{Deserialize, Serialize};
-use sqlx::prelude::FromRow;
+use sqlx::{prelude::FromRow, Pool, Postgres};
 
 use super::grid::Grid;
 
@@ -18,26 +18,26 @@ struct GameDTO {
 
 impl Game {
     // Creates a game, saves it in the db and returns it
-    pub async fn new(depth: u8) -> Result<Self, String> {
+    pub async fn new(pool: &Pool<Postgres>) -> Result<Self, String> {
         let error_msg: String = String::from("Impossible to create a game.");
+
+        const DEPTH: u8 = 2;
 
         let new_game = Game {
             id: generate_id(),
-            grid: Grid::new(depth)
+            grid: Grid::new(DEPTH)?
         };
-
-        let pool = db::get_pool().await;
 
         let result = sqlx::query_as::<_, GameDTO>(
             r#"
             INSERT INTO games (id, grid)
             VALUES ($1, $2)
-            RETURNING *;
+            RETURNING id, grid;
             "#,
             )
             .bind(new_game.id.clone())
             .bind(new_game.grid.export())
-            .fetch_one(&pool)
+            .fetch_one(pool)
             .await;
 
         match result {
@@ -47,26 +47,24 @@ impl Game {
     }
 
     // Loads a game from a game_id
-    pub async fn load(game_id: String) -> Result<Self, String> {
-        let pool = db::get_pool().await;
-
+    pub async fn load(pool: &Pool<Postgres>, game_id: String) -> Result<Self, String> {
         let result = sqlx::query_as::<_, GameDTO>(
             r#"
-            SELECT * FROM games
+            SELECT id, grid FROM games
             WHERE id=$1;
             "#,
             )
             .bind(game_id)
-            .fetch_one(&pool)
+            .fetch_one(pool)
             .await;
 
         match result {
             Ok(game_dto) => {
                 // todo: Here we have to load a grid from its bytes string representation
-                let grid = Grid::new(1);
+                let grid = Grid::load(game_dto.grid);
                 Ok(Game {
                     id: game_dto.id,
-                    grid: grid
+                    grid: grid?
                 })
             },
             Err(_) => Err(String::from("Impossible to load game."))
@@ -74,21 +72,19 @@ impl Game {
     }
 
     // Saves the current game in the db
-    pub async fn save(self: &Self) -> Result<(), String> {
+    pub async fn save(self: &Self, pool: &Pool<Postgres>) -> Result<(), String> {
         let error_msg: String = String::from("Impossible to create a game.");
-
-        let pool = db::get_pool().await;
         
         let result = sqlx::query(
             r#"
             UPDATE games SET
             grid = $2 WHERE id = $1
-            RETURNING *;
+            RETURNING id, grid;
             "#,
             )
             .bind(self.id.clone())
             .bind(self.grid.export())
-            .fetch_one(&pool)
+            .fetch_one(pool)
             .await;
 
         match result {

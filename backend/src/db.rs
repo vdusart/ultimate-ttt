@@ -3,9 +3,7 @@ use std::time::Duration;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{ Pool, Postgres };
 
-pub async fn get_pool() -> Pool<Postgres> {
-    let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-
+pub async fn get_pool(database_url: &String) -> Pool<Postgres> {
     PgPoolOptions::new()
         .acquire_timeout(Duration::from_secs(5))
         .max_connections(5)

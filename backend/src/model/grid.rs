@@ -46,19 +46,27 @@ pub type Position = Vec<usize>;
 
 impl Grid {
     // create an empty grid
-    pub fn new(depth: u8) -> Self {
+    pub fn new(depth: u8) -> Result<Self, String> {
+        if depth < 1 {
+            return Err("Unvalid grid depth".to_string());
+        }
         if depth == 1 {
-            Grid {
+            Ok(Grid {
                 cells: vec![Cell::Empty; 9]
-            }
+            })
         } else {
-            Grid {
-                cells: vec![Cell::SubGrid(Grid::new(depth - 1)); 9]
-            }
+            Ok(Grid {
+                cells: vec![Cell::SubGrid(Grid::new(depth - 1)?); 9]
+            })
         }
     }
 
     // create grid from bytes string
+    pub fn load(bytes_string: String) -> Result<Grid, String> {
+        println!("{:?}", bytes_string);
+        Ok(Grid::new(1)?)
+    }
+
     // export bytes string
     pub fn export(self: &Self) -> String {
         let mut bytes_string = String::from("");
