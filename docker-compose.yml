@@ -1,0 +1,40 @@
+version: '3.9'
+
+services:
+  frontend:
+    container_name: frontend-ultimate-ttt
+    image: nginx
+    ports:
+      - 3001:80
+    volumes:
+      - ./frontend/:/usr/share/nginx/html
+
+  backend:
+    container_name: backend-ultimate-ttt
+    restart: always
+    build:
+      context: ./backend
+      dockerfile: ./.docker/dev.dockerfile
+    environment:
+      - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres/${POSTGRES_DB}
+      - RUST_LOG=${RUST_LOG}
+      - RUST_BACKTRACE={RUST_BACKTRACE}
+    ports:
+      - "8080:8080"
+    volumes:
+      - type: bind
+        source: ./backend/src/
+        target: /app/src/
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - 5432:5432
+    volumes:
+      - ./database:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}

@@ -1,0 +1,109 @@
+ <!DOCTYPE html>
+<html>
+<head>
+<title>Ultimate Tic Tac Toe</title>
+</head>
+<style>
+    .grid-container {
+        display: grid;
+        grid-template-columns: auto auto auto;
+        background-color: #2196F3;
+        padding: 10px;
+    }
+    .grid-item {
+        background-color: rgba(255, 255, 255, 0.8);
+        border: 1px solid rgba(0, 0, 0, 0.8);
+        padding: 20px;
+        font-size: 30px;
+        text-align: center;
+    }
+</style>
+<body>
+    <h1>Ultimate Tic Tac Toe</h1>
+    <div style="display: flex; flex-flow: row wrap; align-items: center;">
+        <p style="margin-right: 10px">Game id:</p>
+        <input id="game_id" placeholder="game id"></input>
+    </div>
+
+    <div>
+        <button onclick="createNewGame()">Create a new game</button>
+        <button onclick="loadGame()">Load game</button>
+    </div>
+
+    <p>Encoded grid is: <span id="encoded_grid"></span></p>
+
+
+    <div id="game"></div>
+
+    <script>
+        function createNewGame() {
+            fetch("http://localhost:8080/game", {
+                method: "POST"
+            })
+                .then(async (response) => {
+                    const game_id = await response.json();
+                    console.log(game_id)
+                    document.getElementById("game_id").value = game_id;
+                })
+        }
+
+        function generateGrid(values, sub_grids) {
+            if (values.length != 9) console.log("error generating the grid");
+       
+            let res = '<div class="grid-container">';
+
+            for (let v of values) {
+                res += `<div class="grid-item" id=${v.id}>${v.value}</div>`;
+            }
+            res += '</div>';
+            return res;
+        }
+
+        function loadGame() {
+            const game_id = document.getElementById("game_id").value
+            if (game_id == "") {
+                alert("You need a game id to load a game");
+                return;
+            }
+            fetch(`http://localhost:8080/game/${game_id}`)
+                .then((response) => response.json())
+                .then((json) => {
+                    document.getElementById("encoded_grid").innerHTML = json
+
+                    let i = 0;
+                    let current_grid = []
+
+                    let sub_counter = 0;
+                    let sub_grids = ["game"];
+                    while (i < json.length) {
+                        const tmp = json.substring(i, i+3)
+
+                        let cell;
+                        if (tmp == "000") {
+                            cell = {value: "-"};
+                        } else if (tmp == "001") {
+                            cell = {value: "O"}
+                        } else if (tmp == "010") {
+                            cell = {value:"X"}
+                        } else if (tmp == "011") {
+                            cell = {value:"B"}
+                        } else if (tmp == "100") {
+                            const sub_id = `sub_${sub_counter}`;
+                            cell = {value:"S", id: sub_id};
+                            sub_grids.push(sub_id);
+                            sub_counter++;
+                        }
+                        current_grid.push(cell)
+
+                        i += 3;
+                        if (i % (9 * 3) == 0) {
+                            const id = sub_grids.shift();
+                            document.getElementById(id).innerHTML = generateGrid(current_grid)
+                            current_grid = [];
+                        }
+                    }
+                })
+                }
+    </script>
+</body>
+</html> 
