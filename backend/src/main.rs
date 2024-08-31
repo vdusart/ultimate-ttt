@@ -1,6 +1,5 @@
-mod api;
 mod db;
-mod model;
+mod observables;
 mod utils;
 
 use std::io;
@@ -8,8 +7,8 @@ use std::io;
 use actix_cors::Cors;
 use actix_web::{middleware::Logger, web, App, HttpServer};
 
-use api::game;
 use dotenv::dotenv;
+use observables::game::router::GameRouter;
 use sqlx::{Pool, Postgres};
 
 struct ApplicationState {
@@ -36,8 +35,7 @@ async fn main() -> io::Result<()> {
             .wrap(cors)
             .wrap(Logger::new("[%t] - %r (%s) - %Dms"))
             .app_data(web::Data::new(ApplicationState { pool: pool.clone() }))
-            .service(game::get_game)
-            .service(game::create_game)
+            .configure(GameRouter::register_routes)
     })
     .bind(("0.0.0.0", 8080))?
     .run()

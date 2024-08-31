@@ -1,8 +1,6 @@
-use crate::utils::generate_id;
+use crate::{observables::grid::model::Grid, utils::generate_id};
 use serde::{Deserialize, Serialize};
 use sqlx::{prelude::FromRow, Pool, Postgres};
-
-use super::grid::Grid;
 
 #[derive(Debug)]
 pub struct Game {
@@ -32,7 +30,7 @@ impl Game {
             r#"
             INSERT INTO games (id, grid)
             VALUES ($1, $2)
-            RETURNING id, grid;
+            RETURNING *;
             "#,
             )
             .bind(new_game.id.clone())
@@ -79,7 +77,7 @@ impl Game {
             r#"
             UPDATE games SET
             grid = $2 WHERE id = $1
-            RETURNING id, grid;
+            RETURNING *;
             "#,
             )
             .bind(self.id.clone())
