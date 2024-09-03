@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::{collections::VecDeque, vec};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Cell {
@@ -10,6 +10,23 @@ pub enum Cell {
 }
 
 impl Cell {
+    pub fn from_bits(bits: &str, optional_subgrid: Option<Grid>) -> Result<Self, String> {
+        match bits {
+           "000" => Ok(Cell::Empty),
+           "001" => Ok(Cell::Circle),
+           "010" => Ok(Cell::Cross),
+           "011" => Ok(Cell::Both),
+           "100" => {
+               if let Some(subgrid) = optional_subgrid {
+                   Ok(Cell::SubGrid(subgrid))
+                } else {
+                    Err("No subgrid found".to_string())
+                }
+           },
+            _ => Err("Impossible to load cell from bits".to_string())
+        }
+    }
+
     pub fn to_bits(self: &Self) -> &str {
         match self {
             Self::Empty => "000",
@@ -63,8 +80,43 @@ impl Grid {
 
     // create grid from bytes string
     pub fn load(bytes_string: String) -> Result<Grid, String> {
-        println!("{:?}", bytes_string);
-        Ok(Grid::new(1)?)
+        if bytes_string.len() % 27 != 0 {
+            return Err("Invalid grid bytes string lenght".to_string());
+        }
+
+        let mut queue:VecDeque<Grid> = VecDeque::new();
+
+        let subgrid_number = bytes_string.len() / 27;
+        // Processing the subgrid in the reverse order
+        for subgrid_index in 0..subgrid_number {
+            let i = subgrid_number - subgrid_index;
+            let substr = &bytes_string[(i-1)*27..(i)*27];
+
+            let mut tmp_grid: Grid = Grid { cells: vec![Cell::Empty; 9] };
+
+            // Loading cell from end to start
+            for j in (0..27).step_by(3) {
+                let k = 27 - j;
+                let bits = &substr[k-3..k];
+
+                let sg: Option<Grid> = if bits == "100" {
+                    queue.pop_front()
+                } else { None };
+
+                let cell = Cell::from_bits(bits, sg)?;
+                tmp_grid.cells[(k/3)-1] = cell;
+            }
+            queue.push_back(tmp_grid);
+        }
+
+        if queue.len() != 1 {
+            return Err("Invalid byte string".to_string());
+        }
+
+        match queue.pop_front() {
+            Some(main_grid) => Ok(main_grid),
+            None => Err("Invalid byte string".to_string())
+        }
     }
 
     // export bytes string

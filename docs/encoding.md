@@ -137,7 +137,15 @@ This section covers the decoding algorithm.
 - Length % 27 == 0
 
 ### Decoding Process
-1. Iterate through the byte string in 27-bit chunks (grid by grid).
-2. Within each 27-bit chunk, read 3 bits at a time (cell by cell)
-3. Each time a `0b100` value (sub-grid) is encountered, push a new grid onto a queue to be decoded later.
-4. At the beginning of each new grid, pop the first element from the queue and decode that sub-grid.
+
+1. Loop through the byte string in 27-bit chunks, representing each grid, but in reverse order (right to left).
+2. Within each chunk, read 3 bits at a time, representing each cell, again in reverse order (from the bottom-right cell to the top-left).
+3. For each 3-bit sequence, decode the cell.
+4. Once the current grid is fully loaded, push it to the end of a queue. Then move on to decode the next subgrid.
+5. When encounter a `0b100` value (indicating a subgrid), pop the first element from the queue, which gives us the corresponding subgrid value.
+
+This approach ensures that by the time we need to place a subgrid, it has already been decoded, allowing us to insert it directly without deferring the decoding process.
+
+You can find an animated explanation below:
+
+https://github.com/user-attachments/assets/c70df260-3db9-48df-8b6c-749ebceb7278

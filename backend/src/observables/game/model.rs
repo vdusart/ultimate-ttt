@@ -58,7 +58,6 @@ impl Game {
 
         match result {
             Ok(game_dto) => {
-                // todo: Here we have to load a grid from its bytes string representation
                 let grid = Grid::load(game_dto.grid);
                 Ok(Game {
                     id: game_dto.id,
