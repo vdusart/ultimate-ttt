@@ -1,4 +1,5 @@
 mod db;
+mod errors;
 mod observables;
 mod utils;
 

@@ -1,4 +1,4 @@
-use crate::{observables::grid::model::Grid, utils::generate_id};
+use crate::{db::DatabaseError, errors::ApplicationError, observables::grid::model::Grid, utils::generate_id};
 use serde::{Deserialize, Serialize};
 use sqlx::{prelude::FromRow, Pool, Postgres};
 
@@ -16,9 +16,7 @@ struct GameDTO {
 
 impl Game {
     // Creates a game, saves it in the db and returns it
-    pub async fn new(pool: &Pool<Postgres>) -> Result<Self, String> {
-        let error_msg: String = String::from("Impossible to create a game.");
-
+    pub async fn new(pool: &Pool<Postgres>) -> Result<Self, ApplicationError> {
         const DEPTH: u8 = 2;
 
         let new_game = Game {
@@ -38,14 +36,15 @@ impl Game {
             .fetch_one(pool)
             .await;
 
+
         match result {
             Ok(_) => Ok(new_game),
-            Err(_) => Err(error_msg)
+            Err(_) => Err(ApplicationError::Database(DatabaseError::Insert("Game".to_string())))
         }
     }
 
     // Loads a game from a game_id
-    pub async fn load(pool: &Pool<Postgres>, game_id: String) -> Result<Self, String> {
+    pub async fn load(pool: &Pool<Postgres>, game_id: String) -> Result<Self, ApplicationError> {
         let result = sqlx::query_as::<_, GameDTO>(
             r#"
             SELECT id, grid FROM games
@@ -64,7 +63,7 @@ impl Game {
                     grid: grid?
                 })
             },
-            Err(_) => Err(String::from("Impossible to load game."))
+            Err(_) => Err(ApplicationError::Database(DatabaseError::NotFound("Grid".to_string())))
         }
     }
 

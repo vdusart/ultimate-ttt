@@ -1,5 +1,9 @@
 use std::{collections::VecDeque, vec};
 
+use crate::errors::ApplicationError;
+
+use super::errors::{CellError, GridError};
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum Cell {
     Empty,
@@ -10,7 +14,7 @@ pub enum Cell {
 }
 
 impl Cell {
-    pub fn from_bits(bits: &str, optional_subgrid: Option<Grid>) -> Result<Self, String> {
+    pub fn from_bits(bits: &str, optional_subgrid: Option<Grid>) -> Result<Self, ApplicationError> {
         match bits {
            "000" => Ok(Cell::Empty),
            "001" => Ok(Cell::Circle),
@@ -20,10 +24,10 @@ impl Cell {
                if let Some(subgrid) = optional_subgrid {
                    Ok(Cell::SubGrid(subgrid))
                 } else {
-                    Err("No subgrid found".to_string())
+                    Err(ApplicationError::Grid(GridError::NoSubgrid()))
                 }
            },
-            _ => Err("Impossible to load cell from bits".to_string())
+            _ => Err(ApplicationError::Cell(CellError::Load()))
         }
     }
 
@@ -63,9 +67,9 @@ pub type Position = Vec<usize>;
 
 impl Grid {
     // create an empty grid
-    pub fn new(depth: u8) -> Result<Self, String> {
+    pub fn new(depth: u8) -> Result<Self, ApplicationError> {
         if depth < 1 {
-            return Err("Unvalid grid depth".to_string());
+            return Err(ApplicationError::Grid(GridError::InvalidDepth(depth)));
         }
         if depth == 1 {
             Ok(Grid {
@@ -79,9 +83,9 @@ impl Grid {
     }
 
     // create grid from bytes string
-    pub fn load(bytes_string: String) -> Result<Grid, String> {
+    pub fn load(bytes_string: String) -> Result<Grid, ApplicationError> {
         if bytes_string.len() % 27 != 0 {
-            return Err("Invalid grid bytes string lenght".to_string());
+            return Err(ApplicationError::Grid(GridError::InvalidLength(bytes_string.len())));
         }
 
         let mut queue:VecDeque<Grid> = VecDeque::new();
@@ -110,12 +114,12 @@ impl Grid {
         }
 
         if queue.len() != 1 {
-            return Err("Invalid byte string".to_string());
+            return Err(ApplicationError::Grid(GridError::InvalidBytesString()));
         }
 
         match queue.pop_front() {
             Some(main_grid) => Ok(main_grid),
-            None => Err("Invalid byte string".to_string())
+            None => Err(ApplicationError::Grid(GridError::InvalidBytesString()))
         }
     }
 
