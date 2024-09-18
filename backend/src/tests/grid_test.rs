@@ -47,6 +47,85 @@ mod tests {
     }
 
 
+    // Testing the "load" function
+    #[test]
+    fn test_load_empty_grid() {
+        let bytes_string = "000000000000000000000000000".to_string();
+
+        let result = Grid::load(bytes_string);
+        assert!(result.is_ok());
+
+        let loaded_grid = result.unwrap();
+        assert_eq!(loaded_grid.cells.len(), 9);
+
+        let expected_grid = Grid {
+            cells: vec![Cell::Empty; 9]
+        };
+
+        assert_eq!(loaded_grid, expected_grid);
+    }
+
+    #[test]
+    fn test_load_with_subgrid() {
+        let subgrid1_1 = Grid {
+            cells: vec![
+                Cell::Circle, Cell::Cross, Cell::Empty,
+                Cell::Empty, Cell::Circle, Cell::Circle,
+                Cell::Empty, Cell::Cross, Cell::Empty,
+            ]
+        };
+
+        let subgrid1 = Grid {
+            cells: vec![
+                Cell::Empty, Cell::Empty, Cell::Empty,
+                Cell::Empty, Cell::Empty, Cell::Empty,
+                Cell::Empty, Cell::Empty, Cell::SubGrid(subgrid1_1),
+            ]
+        };
+
+        let subgrid2 = Grid {
+            cells: vec![
+                Cell::Empty, Cell::Cross, Cell::Empty,
+                Cell::Empty, Cell::Empty, Cell::Circle,
+                Cell::Empty, Cell::Cross, Cell::Empty,
+            ]
+        };
+
+        let subgrid3 = Grid {
+            cells: vec![
+                Cell::Empty, Cell::Empty, Cell::Empty,
+                Cell::Circle, Cell::Empty, Cell::Empty,
+                Cell::Empty, Cell::Empty, Cell::Empty,
+            ]
+        };
+
+        let subgrid4 = Grid {
+            cells: vec![
+                Cell::Empty, Cell::Empty, Cell::Circle,
+                Cell::Empty, Cell::Empty, Cell::Empty,
+                Cell::Empty, Cell::Empty, Cell::Empty,
+            ]
+        };
+
+        let expected_grid = Grid {
+            cells: vec![
+                Cell::Circle, Cell::SubGrid(subgrid1), Cell::SubGrid(subgrid2),
+                Cell::Circle, Cell::SubGrid(subgrid3), Cell::Cross,
+                Cell::Cross, Cell::SubGrid(subgrid4), Cell::Circle,
+            ]
+        };
+
+        let bytes_string = "001100100001100010010100001000000000000000000000000100000010000000000001000010000000000000001000000000000000000000001000000000000000000001010000000001001000010000".to_string();
+
+        let result = Grid::load(bytes_string);
+        assert!(result.is_ok());
+
+        let loaded_grid = result.unwrap();
+
+        assert_eq!(loaded_grid, expected_grid);
+    }
+
+
     // Testing the "export" function
     #[test]
     fn test_export_empty_grid() {
@@ -120,5 +199,19 @@ mod tests {
 
         let bytes_string = grid.export();
         assert_eq!(bytes_string, "001100100001100010010100001000000000000000000000000100000010000000000001000010000000000000001000000000000000000000001000000000000000000001010000000001001000010000");
+    }
+
+    // Testing the full "load/export" system
+    #[test]
+    fn test_full_load_export_system() {
+        let bytes_string = "001100100001100010010100001000000000000000000000000100000010000000000001000010000000000000001000000000000000000000001000000000000000000001010000000001001000010000";
+
+        let result = Grid::load(bytes_string.to_string());
+        assert!(result.is_ok());
+
+        let loaded_grid = result.unwrap();
+
+        let export_string = loaded_grid.export();
+        assert_eq!(bytes_string, export_string);
     }
 }
