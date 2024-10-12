@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use crate::{errors::ApplicationError, observables::grid::{errors::GridError, model::{Cell, Grid}}};
+    use crate::{errors::ApplicationError, observables::grid::{errors::{CellError, GridError}, model::{Cell, Grid}}};
 
     // Testing the "new" function
     #[test]
@@ -213,5 +213,154 @@ mod tests {
 
         let export_string = loaded_grid.export();
         assert_eq!(bytes_string, export_string);
+    }
+
+    #[test]
+    fn test_play_empty_position() {
+        let mut grid = Grid {
+            cells: vec![
+                Cell::Empty, Cell::Empty, Cell::Empty,
+                Cell::Empty, Cell::Empty, Cell::Empty,
+                Cell::Empty, Cell::Empty, Cell::Empty,
+            ]
+        };
+
+        let position: Vec<usize> = vec![];
+        let result = grid.play(&position, Cell::Cross);
+        assert!(result.is_err());
+
+        if let Err(ApplicationError::Grid(GridError::InvalidPosition(_))) = result {
+            assert!(true);
+        } else {
+            panic!("Expected GridError::InvalidPosition, but got a different error");
+        }
+    }
+
+    #[test]
+    fn test_play_invalid_position() {
+        let mut grid = Grid {
+            cells: vec![
+                Cell::Empty, Cell::Empty, Cell::Empty,
+                Cell::Empty, Cell::Empty, Cell::Empty,
+                Cell::Empty, Cell::Empty, Cell::Empty,
+            ]
+        };
+
+        let position: Vec<usize> = vec![10];
+        let result = grid.play(&position, Cell::Cross);
+        assert!(result.is_err());
+
+        if let Err(ApplicationError::Grid(GridError::InvalidPosition(_))) = result {
+            assert!(true);
+        } else {
+            panic!("Expected GridError::InvalidPosition, but got a different error");
+        }
+    }
+    
+    #[test]
+    fn test_play_invalid_deep_position() {
+        let subgrid = Grid {
+            cells: vec![
+                Cell::Empty, Cell::Empty, Cell::Empty,
+                Cell::Empty, Cell::Empty, Cell::Empty,
+                Cell::Empty, Cell::Empty, Cell::Empty,
+            ]
+        };
+        let mut grid = Grid {
+            cells: vec![
+                Cell::Empty, Cell::Empty, Cell::SubGrid(subgrid),
+                Cell::Empty, Cell::Empty, Cell::Empty,
+                Cell::Empty, Cell::Empty, Cell::Empty,
+            ]
+        };
+
+        let position: Vec<usize> = vec![2, 10];
+        let result = grid.play(&position, Cell::Cross);
+        assert!(result.is_err());
+
+        if let Err(ApplicationError::Grid(GridError::InvalidPosition(_))) = result {
+            assert!(true);
+        } else {
+            panic!("Expected GridError::InvalidPosition, but got a different error");
+        }
+    }
+
+    #[test]
+    fn test_play_too_deep_position() {
+        let mut grid = Grid {
+            cells: vec![
+                Cell::Empty, Cell::Empty, Cell::Empty,
+                Cell::Empty, Cell::Empty, Cell::Empty,
+                Cell::Empty, Cell::Empty, Cell::Empty,
+            ]
+        };
+
+        let position: Vec<usize> = vec![2, 3];
+        let result = grid.play(&position, Cell::Cross);
+        assert!(result.is_err());
+
+        if let Err(ApplicationError::Grid(GridError::InvalidPosition(_))) = result {
+            assert!(true);
+        } else {
+            panic!("Expected GridError::InvalidPosition, but got a different error");
+        }
+    }
+
+    #[test]
+    fn test_play_not_empty_cell() {
+        let mut grid = Grid {
+            cells: vec![
+                Cell::Empty, Cell::Circle, Cell::Empty,
+                Cell::Empty, Cell::Empty, Cell::Empty,
+                Cell::Empty, Cell::Empty, Cell::Empty,
+            ]
+        };
+
+        let position: Vec<usize> = vec![1];
+        let result = grid.play(&position, Cell::Cross);
+        assert!(result.is_err());
+
+        if let Err(ApplicationError::Cell(CellError::AlreadyUsed())) = result {
+            assert!(true);
+        } else {
+            panic!("Expected CellError::AlreadyUsed, but got a different error");
+        }
+    }
+
+    #[test]
+    fn test_play() {
+        let mut grid = Grid {
+            cells: vec![
+                Cell::Empty, Cell::Empty, Cell::Empty,
+                Cell::Empty, Cell::Empty, Cell::Empty,
+                Cell::Empty, Cell::Empty, Cell::Empty,
+            ]
+        };
+
+        let position: Vec<usize> = vec![1];
+        let result = grid.play(&position, Cell::Circle);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_play_in_subgrid() {
+        let subgrid = Grid {
+            cells: vec![
+                Cell::Empty, Cell::Empty, Cell::Empty,
+                Cell::Empty, Cell::Empty, Cell::Empty,
+                Cell::Empty, Cell::Empty, Cell::Empty,
+            ]
+        };
+        let mut grid = Grid {
+            cells: vec![
+                Cell::Empty, Cell::Empty, Cell::SubGrid(subgrid),
+                Cell::Empty, Cell::Empty, Cell::Empty,
+                Cell::Empty, Cell::Empty, Cell::Empty,
+            ]
+        };
+
+        let position: Vec<usize> = vec![2, 1];
+        let result = grid.play(&position, Cell::Cross);
+        assert!(result.is_ok());
     }
 }

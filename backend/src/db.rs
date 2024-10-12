@@ -10,8 +10,12 @@ use thiserror::Error;
 pub enum DatabaseError {
     #[error("Impossible to insert: {0}")]
     Insert(String),
+
     #[error("{0} not found.")]
     NotFound(String),
+
+    #[error("Impossible to update: {0}")]
+    Update(String),
 }
 
 impl DatabaseError {

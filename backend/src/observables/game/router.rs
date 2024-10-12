@@ -14,6 +14,7 @@ impl GameRouter {
        cfg.service(
            web::resource("/game/{game_id}")
            .route(web::get().to(GameController::get_game))
+           .route(web::put().to(GameController::play))
         );
    }
 }

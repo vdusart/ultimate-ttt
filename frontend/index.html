@@ -47,18 +47,6 @@
                 })
         }
 
-        function generateGrid(values, sub_grids) {
-            if (values.length != 9) console.log("error generating the grid");
-       
-            let res = '<div class="grid-container">';
-
-            for (let v of values) {
-                res += `<div class="grid-item" id=${v.id}>${v.value}</div>`;
-            }
-            res += '</div>';
-            return res;
-        }
-
         function loadGame() {
             const game_id = document.getElementById("game_id").value
             if (game_id == "") {
@@ -68,16 +56,22 @@
             fetch(`http://localhost:8080/game/${game_id}`)
                 .then((response) => response.json())
                 .then((json) => {
-                    document.getElementById("encoded_grid").innerHTML = json
+                    document.getElementById("encoded_grid").innerHTML = json;
 
                     let i = 0;
-                    let current_grid = []
 
-                    let sub_counter = 0;
-                    let sub_grids = ["game"];
+                    let current_sub;
+                    const subgrids = ["game"];
+                    let html_content = ""
                     while (i < json.length) {
-                        const tmp = json.substring(i, i+3)
+                        const cell_index = (i/3)%9;
+                        if (cell_index == 0) {
+                            current_sub = subgrids.shift();
+                            html_content = '<div class="grid-container">';
+                        }
+                        const full_index = `${current_sub}.${cell_index}`;
 
+                        const tmp = json.substring(i, i+3);
                         let cell;
                         if (tmp == "000") {
                             cell = {value: "-"};
@@ -88,22 +82,46 @@
                         } else if (tmp == "011") {
                             cell = {value:"B"}
                         } else if (tmp == "100") {
-                            const sub_id = `sub_${sub_counter}`;
-                            cell = {value:"S", id: sub_id};
-                            sub_grids.push(sub_id);
-                            sub_counter++;
+                            cell = {value:"S"};
+                            subgrids.push(full_index);
                         }
-                        current_grid.push(cell)
+                        cell = {
+                            ...cell,
+                            id: full_index
+                        }
 
-                        i += 3;
-                        if (i % (9 * 3) == 0) {
-                            const id = sub_grids.shift();
-                            document.getElementById(id).innerHTML = generateGrid(current_grid)
-                            current_grid = [];
+                        html_content += `<div class="grid-item" id=${cell.id}>${cell.value}</div>`;
+                        if (cell_index == 8) {
+                            html_content += '</div>';
+                            document.getElementById(current_sub).innerHTML = html_content;
                         }
+                        i+=3;
                     }
                 })
-                }
+        }
+
+        document.getElementById("game").addEventListener('click', function(e) {
+            const target = e.target;
+            const cell_id = target.id.replace("game.", "").split(".").map(s => parseInt(s));
+            console.log("Playing in pos:", cell_id)
+
+            if (cell_id == "") return
+
+            const game_id = document.getElementById("game_id").value
+
+            fetch(`http://localhost:8080/game/${game_id}`, {
+                method: "PUT",
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ position: cell_id })
+            })
+                .then(async (response) => {
+                    const data = await response.json();
+                    loadGame();
+                })
+        });
     </script>
 </body>
 </html> 

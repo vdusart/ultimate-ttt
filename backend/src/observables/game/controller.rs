@@ -1,8 +1,14 @@
-use actix_web::{http::StatusCode, web::{Data, Path}, HttpResponse, Responder};
-use crate::ApplicationState;
+use actix_web::{http::StatusCode, web::{Data, Json, Path}, HttpResponse, Responder};
+use serde::Deserialize;
+use crate::{observables::grid::model::Cell, ApplicationState};
 use super::model::Game;
 
 pub struct GameController {}
+
+#[derive(Debug, Deserialize)]
+pub struct PlayRequest {
+    position: Vec<usize>
+}
 
 impl GameController {
     pub async fn create_game(data: Data<ApplicationState>) -> impl Responder {
@@ -18,5 +24,31 @@ impl GameController {
             Ok(game) => HttpResponse::build(StatusCode::OK).json(game.grid.export()),
             Err(error) => error.error_response()
         }
+    }
+
+    pub async fn play(data: Data<ApplicationState>, path: Path<String>, play_request: Json<PlayRequest>) -> impl Responder {
+        let game_id = path.into_inner();
+        let result = Game::load(&data.pool, game_id).await;
+
+        if let Err(error) = result {
+            return error.error_response();
+        }
+
+        let mut game = result.unwrap();
+
+        let cell_value = if game.current_player == 0 { Cell::Circle } else { Cell::Cross };
+        let result = game.grid.play(&play_request.position, cell_value);
+        if let Err(error) = result {
+            return error.error_response();
+        }
+
+        game.current_player = (game.current_player + 1) % 2;
+
+        let result = game.save(&data.pool).await;
+        if let Err(error) = result {
+            return error.error_response();
+        }
+
+        HttpResponse::build(StatusCode::OK).json("move played")
     }
 }

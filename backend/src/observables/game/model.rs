@@ -6,12 +6,14 @@ use sqlx::{prelude::FromRow, Pool, Postgres};
 pub struct Game {
     pub id: String,
     pub grid: Grid,
+    pub current_player: i16
 }
 
 #[derive(Debug, FromRow, Deserialize, Serialize)]
 struct GameDTO {
     id: String,
     grid: String,
+    current_player: i16
 }
 
 impl Game {
@@ -21,18 +23,20 @@ impl Game {
 
         let new_game = Game {
             id: generate_id(),
-            grid: Grid::new(DEPTH)?
+            grid: Grid::new(DEPTH)?,
+            current_player: 0
         };
 
         let result = sqlx::query_as::<_, GameDTO>(
             r#"
-            INSERT INTO games (id, grid)
-            VALUES ($1, $2)
+            INSERT INTO games (id, grid, current_player)
+            VALUES ($1, $2, $3)
             RETURNING *;
             "#,
             )
             .bind(new_game.id.clone())
             .bind(new_game.grid.export())
+            .bind(new_game.current_player)
             .fetch_one(pool)
             .await;
 
@@ -47,7 +51,7 @@ impl Game {
     pub async fn load(pool: &Pool<Postgres>, game_id: String) -> Result<Self, ApplicationError> {
         let result = sqlx::query_as::<_, GameDTO>(
             r#"
-            SELECT id, grid FROM games
+            SELECT id, grid, current_player FROM games
             WHERE id=$1;
             "#,
             )
@@ -60,7 +64,8 @@ impl Game {
                 let grid = Grid::load(game_dto.grid);
                 Ok(Game {
                     id: game_dto.id,
-                    grid: grid?
+                    grid: grid?,
+                    current_player: game_dto.current_player
                 })
             },
             Err(_) => Err(ApplicationError::Database(DatabaseError::NotFound("Grid".to_string())))
@@ -68,24 +73,25 @@ impl Game {
     }
 
     // Saves the current game in the db
-    pub async fn save(self: &Self, pool: &Pool<Postgres>) -> Result<(), String> {
-        let error_msg: String = String::from("Impossible to create a game.");
-        
+    pub async fn save(self: &Self, pool: &Pool<Postgres>) -> Result<(), ApplicationError> {
         let result = sqlx::query(
             r#"
             UPDATE games SET
-            grid = $2 WHERE id = $1
+            grid = $2,
+            current_player = $3
+            WHERE id = $1
             RETURNING *;
             "#,
             )
             .bind(self.id.clone())
             .bind(self.grid.export())
+            .bind(self.current_player)
             .fetch_one(pool)
             .await;
 
         match result {
             Ok(_) => Ok(()),
-            Err(_) => Err(error_msg)
+            Err(_) => Err(ApplicationError::Database(DatabaseError::Update("Grid".to_string())))
         }
     }
 }

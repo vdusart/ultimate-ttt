@@ -7,7 +7,7 @@ mod tests;
 use std::io;
 
 use actix_cors::Cors;
-use actix_web::{middleware::Logger, web, App, HttpServer};
+use actix_web::{http::header, middleware::Logger, web, App, HttpServer};
 
 use dotenv::dotenv;
 use observables::game::router::GameRouter;
@@ -31,7 +31,9 @@ async fn main() -> io::Result<()> {
 
     HttpServer::new(move || {
         let cors = Cors::default()
-            .allowed_origin("http://localhost:3001");
+            .allowed_origin("http://localhost:3001")
+            .allow_any_method()
+            .allowed_header(header::CONTENT_TYPE);
 
         App::new()
             .wrap(cors)

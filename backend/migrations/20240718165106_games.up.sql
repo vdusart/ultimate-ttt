@@ -1,4 +1,5 @@
 CREATE TABLE IF NOT EXISTS games (
     id VARCHAR PRIMARY KEY,
-    grid VARCHAR NOT NULL
+    grid VARCHAR NOT NULL,
+    current_player SMALLINT
 );

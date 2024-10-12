@@ -142,10 +142,10 @@ impl Grid {
     }
 
     // play a move
-    pub fn play(self: &mut Self, position: Position, cell_value: Cell) {
+    pub fn play(self: &mut Self, position: &Position, cell_value: Cell) -> Result<(), ApplicationError> {
         let depth = position.len();
         if depth == 0 {
-            todo!("Error: Invalid playing position.");
+            return Err(ApplicationError::Grid(GridError::InvalidPosition("Empty position".to_string())));
         }
 
         let mut current_grid = self;
@@ -156,22 +156,24 @@ impl Grid {
                 if let Some(subgrid) = cell.get_mut_subgrid() {
                     current_grid = subgrid;
                 } else {
-                    todo!("Error: Invalid playing position (playing too deep)");
+                    return Err(ApplicationError::Grid(GridError::InvalidPosition("Playing too deep".to_string())));
                 }
             } else {
-                todo!("Error: Invalid playing position.");
+                return Err(ApplicationError::Grid(GridError::InvalidPosition("Out of grid cell".to_string())));
             }
         }
 
         let played_index = *position.last().unwrap();
         if let Some(targeted_cell) = current_grid.cells.get_mut(played_index) {
             if *targeted_cell != Cell::Empty {
-                todo!("Error: Invalid move, this cell is not empty.");
+                return Err(ApplicationError::Cell(CellError::AlreadyUsed()));
             }
             *targeted_cell = cell_value;
         } else {
-            todo!("Error: Invalid playing position.")
+            return Err(ApplicationError::Grid(GridError::InvalidPosition("Out of grid cell".to_string())));
         }
+
+        Ok(())
     }
 
     // sanitize the grid
