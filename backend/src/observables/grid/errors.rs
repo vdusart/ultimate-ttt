@@ -19,7 +19,6 @@ impl CellError {
     }
 }
 
-
 #[derive(Debug, Error)]
 pub enum GridError {
     #[error("Invalid grid bytes string lenght: {0}")]

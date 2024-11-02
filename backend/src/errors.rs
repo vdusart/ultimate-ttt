@@ -1,8 +1,14 @@
-use actix_web::{http::{header::ContentType, StatusCode}, HttpResponse};
+use actix_web::{
+    http::{header::ContentType, StatusCode},
+    HttpResponse,
+};
 use serde::Serialize;
 use thiserror::Error;
 
-use crate::{db::DatabaseError, observables::grid::errors::{CellError, GridError}};
+use crate::{
+    db::DatabaseError,
+    observables::grid::errors::{CellError, GridError},
+};
 
 #[derive(Error, Debug)]
 pub enum ApplicationError {
@@ -16,7 +22,7 @@ pub enum ApplicationError {
 
 #[derive(Serialize)]
 struct ErrorResponse {
-    message: String
+    message: String,
 }
 
 impl ApplicationError {
@@ -30,7 +36,7 @@ impl ApplicationError {
 
     pub fn error_response(&self) -> HttpResponse {
         let response = ErrorResponse {
-            message: self.to_string()
+            message: self.to_string(),
         };
 
         HttpResponse::build(self.status_code())

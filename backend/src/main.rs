@@ -1,8 +1,8 @@
 mod db;
 mod errors;
 mod observables;
-mod utils;
 mod tests;
+mod utils;
 
 use std::io;
 
@@ -14,7 +14,7 @@ use observables::game::router::GameRouter;
 use sqlx::{Pool, Postgres};
 
 struct ApplicationState {
-    pool: Pool<Postgres>
+    pool: Pool<Postgres>,
 }
 
 #[actix_web::main]
@@ -25,9 +25,7 @@ async fn main() -> io::Result<()> {
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let pool = db::get_pool(&database_url).await;
 
-    let _ = sqlx::migrate!("./migrations")
-        .run(&pool)
-        .await;
+    let _ = sqlx::migrate!("./migrations").run(&pool).await;
 
     HttpServer::new(move || {
         let cors = Cors::default()

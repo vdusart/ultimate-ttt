@@ -2,9 +2,8 @@ use std::time::Duration;
 
 use actix_web::http::StatusCode;
 use sqlx::postgres::PgPoolOptions;
-use sqlx::{ Pool, Postgres };
+use sqlx::{Pool, Postgres};
 use thiserror::Error;
-
 
 #[derive(Debug, Error)]
 pub enum DatabaseError {
@@ -22,7 +21,7 @@ impl DatabaseError {
     pub fn status_code(&self) -> StatusCode {
         match *self {
             Self::NotFound(_) => StatusCode::NOT_FOUND,
-            _ => StatusCode::INTERNAL_SERVER_ERROR
+            _ => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }
